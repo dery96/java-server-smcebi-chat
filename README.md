@@ -17,6 +17,7 @@ this is simple server chat application for university java project using:
 `/account/login/:login/:password` <br>
 `/account/new/:name/:password/:nickname/:gender (user)` <br>
 `/account/change/password/:password/:id` <br>
+`/account/change/nickname/:nickname/:id` <br>
 `/user/all` <br>
 `/channel/all` <br>
 `/channel/new/:name/:owner_id/:size` <br>
