@@ -1,25 +1,29 @@
 
-import Models.User;
+// Server packages
 import io.javalin.Javalin;
 import io.javalin.embeddedserver.jetty.websocket.WsSession;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import kotlin.Lazy;
 import org.eclipse.jetty.websocket.api.Session;
 import org.javalite.activejdbc.Base;
-import org.javalite.activejdbc.LazyList;
 import org.json.JSONObject;
 
+import static Controllers.AccountControllers.ChangeNickname;
+import static Controllers.AccountControllers.ChangePassword;
 import static j2html.TagCreator.article;
 import static j2html.TagCreator.attrs;
 import static j2html.TagCreator.b;
 import static j2html.TagCreator.p;
 import static j2html.TagCreator.span;
+
+// Models, Controlles
+import static Controllers.UserController.CreateUser;
+import static Controllers.ChannelController.CreateChannel;
+import static Controllers.ChannelController.getChannels;
+import static Controllers.AccountControllers.AccountLogin;
+import static Controllers.UserController.getUsers;
 
 public class Server {
     private static Map<WsSession, String> userUsernameMap = new ConcurrentHashMap<>();
@@ -47,23 +51,28 @@ public class Server {
                         broadcastMessage(userUsernameMap.get(session), message);
                     });
                 })
-                .get("/user/*/and/*", ctx -> {
-                    Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
-                    LazyList userQuery = User.where("login = '" + ctx.splat(0) + "' and password = '" + ctx.splat(1) + "'");
-                    String userJson = userQuery.toJson(true);
-                    if (userJson == "[]") {
-                        // It means that somethinh like that doesn't exsits.
-                        ctx.status(404);
-                    } else {
-                        ctx.result(userJson);
-                    }
+                .get("/account/login/:login/:password", ctx -> {
+                    ctx.status(AccountLogin(ctx.param("login"), ctx.param("password")));
+                })
+                .post("/account/new/:name/:password/:nickname/:gender", ctx -> {
+                    ctx.status(CreateUser(ctx.param("name"), ctx.param("password"), ctx.param("nickname"), ctx.param("gender")));
+                })
+                .post("/account/change/password/:password/:id", ctx -> {
+                    ctx.status(ChangePassword(ctx.param("password"), ctx.param("id")));
+                })
+                .post("/account/change/nickname/:nickname/:id", ctx -> {
+                    ctx.status(ChangeNickname(ctx.param("nickname"), ctx.param("id")));
+                })
+                .post("/channel/new/:name/:owner_id/:size", ctx -> {
+                    ctx.status(CreateChannel(ctx.param("name"), ctx.param("owner_id"), ctx.param("size")));
+                })
+                .get("/user/all", ctx -> {
+                    ctx.result(getUsers());
+                })
+                .get("/channel/all", ctx -> {
+                    ctx.result(getChannels());
                 })
                 .start();
-    }
-
-    private void generateUserToken(User user, String ipAddr) {
-        // Simple user Token generator,
-//        String sessionId = SHA2(userId + ipAddr) + prngRandomNumber;
     }
 
     // Sends a message from one user to all users, along with a list of current usernames
