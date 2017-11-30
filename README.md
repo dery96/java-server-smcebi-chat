@@ -21,7 +21,7 @@ this is simple server chat application for university java project using:
 `/user/all/ require: login, password` <br>
 `/channel/all/ require: login, password` <br>
 `/channel/new/ require: name, owner_id, size` <br>
-`/channel/delete/ require: login, password, user_id, channel_id`
+`/channel/delete/ require: login, password, user_id, channel_id` <br>
 `/token/ require: login, password ` <br>
 
 #### GET <br>

@@ -12,24 +12,21 @@ import static Controllers.AccountControllers.AccountLogin;
 
 public class ChannelController {
     public static Integer CreateChannel(String name, String owner_id, String size) {
-        System.out.println("name: " + name + " owner: " + owner_id + " size: " + size);
+//        System.out.println("name: " + name + " owner: " + owner_id + " size: " + size);
         Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
-        LazyList channelQuery = Channel.where("name = '" + name + "'");
-        String channelJson = channelQuery.toJson(true);
+        String channelJson = Channel.find("name = '" + name + "'").toJson(true);
 
         if (Objects.equals(channelJson, "[\n\n]")) {
-            System.out.println("Channel " + name + " is being created");
             Channel channel = new Channel();
             channel.set("name", name);
             channel.set("owner_id", owner_id);
             channel.set("size", size);
             channel.saveIt();
-
+            Base.close();
             return 201; // SUCCEED
-        } else {
-            System.out.println("Channel " + name + " already exsits");
-            return 409;
         }
+        Base.close();
+        return 401; // UNAUTHORIZED
     }
 
     public static Integer DeleteChannel(String channel_id, String owner_id) {
@@ -38,14 +35,15 @@ public class ChannelController {
         String channelQuery = "id = '" + channel_id + "' and owner_id = '" + owner_id + "'";
         String channelJson = Channel.find(channelQuery).toJson(true);
 
-        if (channelJson == "[\n\n]") {
-            return 401;
-        } else {
+        if (!channelJson.equals("[\n\n]")) {
             Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
             Channel channel = Channel.findFirst("id = ?", channel_id);
             channel.delete();
+            Base.close();
             return 202; // Accepted SUCCEED in Delete
         }
+        Base.close();
+        return 401; // UNAUTHORIZED
     }
 
     public static String getChannels(String login, String password) {

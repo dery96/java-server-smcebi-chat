@@ -21,14 +21,11 @@ public class UserController {
             Base.close();
             if (TokenController.CreateUserToken(login).equals(201)) { // CREATE UNIQUE USER TOKEN
                 return 201; // CREATED
-            } else {
-                return 403;
             }
-        } else {
-            // User typed not unique login
-            Base.close();
-            return 403;
+            return 401; // UNAUTHORIZED
         }
+        Base.close();
+        return 401; // UNAUTHORIZED
     }
 
     public static String getUsers(String login, String password) {

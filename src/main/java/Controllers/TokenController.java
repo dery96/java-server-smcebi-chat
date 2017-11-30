@@ -38,7 +38,9 @@ public class TokenController {
         String userQuery = "login = '" + login + "' and password = '" + password + "'";
         String userJson = User.find(userQuery).toJson(true);
         if (!Objects.equals(userJson, "[\n\n]")) {
-            return Token.find("login = '" + login + "'").toJson(true);
+            String tokenFind = Token.find("login = '" + login + "'").toJson(true);
+            Base.close();
+            return tokenFind;
         }
         Base.close();
         return ("Unauthorized");
