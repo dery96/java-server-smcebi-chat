@@ -18,10 +18,10 @@ this is simple server chat application for university java project using:
 `/account/new/ require: name, password, nickname gender (M or F)` <br>
 `/account/change/password/ require: login, password, newPassword` <br>
 `/account/change/nickname/ require: login, password, nickname` <br>
-`/user/all require: login, password` <br>
-`/channel/all require: login, password` <br>
-`/channel/new require: name, owner_id, size` <br>
-`/channel/delete require: login, password, user_id, channel_id`
+`/user/all/ require: login, password` <br>
+`/channel/all/ require: login, password` <br>
+`/channel/new/ require: name, owner_id, size` <br>
+`/channel/delete/ require: login, password, user_id, channel_id`
 `/token/ require: login, password ` <br>
 
 #### GET <br>
