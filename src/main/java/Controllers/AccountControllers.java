@@ -8,6 +8,7 @@ import java.util.Objects;
 
 public class AccountControllers {
     public static Integer AccountLogin(String login, String password) {
+        System.out.println(login + " + " + password);
         Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
         LazyList userQuery = User.where("login = '" + login + "' and password = '" + password + "'");
         String userJson = userQuery.toJson(true);

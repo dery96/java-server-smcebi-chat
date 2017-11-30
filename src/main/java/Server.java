@@ -51,20 +51,20 @@ public class Server {
                         broadcastMessage(userUsernameMap.get(session), message);
                     });
                 })
-                .get("/account/login/:login/:password", ctx -> {
-                    ctx.status(AccountLogin(ctx.param("login"), ctx.param("password")));
+                .post("/account/login/", ctx -> {
+                    ctx.status(AccountLogin(ctx.formParam("login"), ctx.formParam("password")));
                 })
-                .post("/account/new/:name/:password/:nickname/:gender", ctx -> {
-                    ctx.status(CreateUser(ctx.param("name"), ctx.param("password"), ctx.param("nickname"), ctx.param("gender")));
+                .post("/account/new/", ctx -> {
+                    ctx.status(CreateUser(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("nickname"), ctx.formParam("gender")));
                 })
-                .post("/account/change/password/:password/:id", ctx -> {
-                    ctx.status(ChangePassword(ctx.param("password"), ctx.param("id")));
+                .post("/account/password/change", ctx -> {
+                    ctx.status(ChangePassword(ctx.formParam("password"), ctx.formParam("id")));
                 })
-                .post("/account/change/nickname/:nickname/:id", ctx -> {
-                    ctx.status(ChangeNickname(ctx.param("nickname"), ctx.param("id")));
+                .post("/account/nickname/change/", ctx -> {
+                    ctx.status(ChangeNickname(ctx.formParam("nickname"), ctx.formParam("id")));
                 })
-                .post("/channel/new/:name/:owner_id/:size", ctx -> {
-                    ctx.status(CreateChannel(ctx.param("name"), ctx.param("owner_id"), ctx.param("size")));
+                .post("/channel/new/", ctx -> {
+                    ctx.status(CreateChannel(ctx.formParam("name"), ctx.formParam("owner_id"), ctx.formParam("size")));
                 })
                 .get("/user/all", ctx -> {
                     ctx.result(getUsers());
