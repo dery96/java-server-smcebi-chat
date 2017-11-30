@@ -14,16 +14,15 @@ public class ChannelController {
         Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
         LazyList channelQuery = Channel.where("name = '" + name + "'");
         String channelJson = channelQuery.toJson(true);
-        Base.close();
 
         if (Objects.equals(channelJson, "[\n\n]")) {
             System.out.println("Channel " + name + " is being created");
-            Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
             Channel channel = new Channel();
             channel.set("name", name);
             channel.set("owner_id", owner_id);
             channel.set("size", size);
             channel.saveIt();
+            Base.close();
             return 201; // SUCCEED
         } else {
             System.out.println("Channel " + name + " already exsits");

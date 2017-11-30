@@ -1,13 +1,11 @@
 package Controllers;
 
-import Models.Channel;
 import Models.User;
 import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
-import org.javalite.activejdbc.Model;
 
-import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 public class UserController {
 
@@ -24,10 +22,15 @@ public class UserController {
             channel.set("gender", gender);
             channel.saveIt();
             Base.close();
-            return 201;
+
+            if (TokenController.CreateUserToken(login).equals(201)) { // CREATE UNIQUE USER TOKEN
+                return 201;
+            } else {
+                return 403;
+            }
         } else {
             // User typed correct login and password
-            return 409;
+            return 403;
         }
     }
 
@@ -35,9 +38,4 @@ public class UserController {
         Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
         return User.findAll().toJson(true);
     }
-
-//    public void generateUserToken(User user, String ipAddr) {
-//        // Simple user Token generator,
-//        String sessionId = SHA2(userId + ipAddr) + prngRandomNumber;
-//    }
 }

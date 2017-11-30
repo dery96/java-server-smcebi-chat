@@ -12,6 +12,7 @@ import org.json.JSONObject;
 
 import static Controllers.AccountControllers.ChangeNickname;
 import static Controllers.AccountControllers.ChangePassword;
+import static Controllers.TokenController.getTokens;
 import static j2html.TagCreator.article;
 import static j2html.TagCreator.attrs;
 import static j2html.TagCreator.b;
@@ -71,6 +72,9 @@ public class Server {
                 })
                 .get("/channel/all", ctx -> {
                     ctx.result(getChannels());
+                })
+                .get("/token/all", ctx -> {
+                    ctx.result(getTokens());
                 })
                 .start();
     }
