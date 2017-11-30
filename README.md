@@ -11,13 +11,17 @@ this is simple server chat application for university java project using:
 * sqlite-jdbc for sqlite database communication
 * active-jdbc sqlite3 ORM
 
-##### History
+#### Api: 
 
-* 30-11-2017 Added: <br>
-`/account/login/:login/:password` <br>
-`/account/new/:name/:password/:nickname/:gender (user)` <br>
-`/account/change/password/:password/:id` <br>
-`/account/change/nickname/:nickname/:id` <br>
-`/user/all` <br>
-`/channel/all` <br>
-`/channel/new/:name/:owner_id/:size` <br>
+#### POST <br>
+`/account/login/ require: login, password` <br>
+`/account/new/ require: name, password, nickname gender (M or F)` <br>
+`/account/change/password/ require: login, password, newPassword` <br>
+`/account/change/nickname/ require: login, password, nickname` <br>
+`/user/all require: login, password` <br>
+`/channel/all require: login, password` <br>
+`/channel/new require: name, owner_id, size` <br>
+`/channel/delete require: login, password, user_id, channel_id`
+`/token/ require: login, password ` <br>
+
+#### GET <br>

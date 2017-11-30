@@ -2,18 +2,15 @@ package Controllers;
 
 import Models.User;
 import org.javalite.activejdbc.Base;
-import org.javalite.activejdbc.LazyList;
 
 import java.util.Objects;
-import java.util.UUID;
 
 public class UserController {
 
     public static Integer CreateUser(String login, String password, String nickname, String gender) {
-        System.out.println("login: " + login + " password: " + password + " nickname: " + nickname + " sex: " + gender);
+        System.out.println("login: " + login + " password: " + password + " nickname: " + nickname + " gender: " + gender);
         Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
-        LazyList userQuery = User.where("login = '" + login + "' and password = '" + password + "'");
-        String userJson = userQuery.toJson(true);
+        String userJson = User.find("login = '" + login + "'").toJson(true);
         if (Objects.equals(userJson, "[\n\n]")) {
             User channel = new User();
             channel.set("login", login);
@@ -22,20 +19,25 @@ public class UserController {
             channel.set("gender", gender);
             channel.saveIt();
             Base.close();
-
             if (TokenController.CreateUserToken(login).equals(201)) { // CREATE UNIQUE USER TOKEN
-                return 201;
+                return 201; // CREATED
             } else {
                 return 403;
             }
         } else {
-            // User typed correct login and password
+            // User typed not unique login
+            Base.close();
             return 403;
         }
     }
 
-    public static String getUsers() {
-        Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
-        return User.findAll().toJson(true);
+    public static String getUsers(String login, String password) {
+        if (AccountControllers.AccountLogin(login, password).equals(202)) {
+            Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
+            String userFindAll = User.findAll().toJson(true);
+            Base.close();
+            return userFindAll;
+        }
+        return ("Unauthorized");
     }
 }

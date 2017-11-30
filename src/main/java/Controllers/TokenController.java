@@ -1,8 +1,11 @@
 package Controllers;
 
 import Models.Token;
+import Models.User;
 import org.javalite.activejdbc.Base;
+import org.javalite.activejdbc.LazyList;
 
+import java.util.Objects;
 import java.util.UUID;
 
 public class TokenController {
@@ -28,11 +31,16 @@ public class TokenController {
         return UUID.randomUUID().toString();
     }
 //    public static Integer RefreshTokenSession() {
-//
 //    }
 
-    public static String getTokens() {
+    public static String getToken(String login, String password) {
         Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
-        return Token.findAll().toJson(true);
+        String userQuery = "login = '" + login + "' and password = '" + password + "'";
+        String userJson = User.find(userQuery).toJson(true);
+        if (!Objects.equals(userJson, "[\n\n]")) {
+            return Token.find("login = '" + login + "'").toJson(true);
+        }
+        Base.close();
+        return ("Unauthorized");
     }
 }

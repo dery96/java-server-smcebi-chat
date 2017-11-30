@@ -12,7 +12,8 @@ import org.json.JSONObject;
 
 import static Controllers.AccountControllers.ChangeNickname;
 import static Controllers.AccountControllers.ChangePassword;
-import static Controllers.TokenController.getTokens;
+import static Controllers.ChannelController.DeleteChannel;
+import static Controllers.TokenController.getToken;
 import static j2html.TagCreator.article;
 import static j2html.TagCreator.attrs;
 import static j2html.TagCreator.b;
@@ -58,23 +59,26 @@ public class Server {
                 .post("/account/new/", ctx -> {
                     ctx.status(CreateUser(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("nickname"), ctx.formParam("gender")));
                 })
-                .post("/account/password/change", ctx -> {
-                    ctx.status(ChangePassword(ctx.formParam("password"), ctx.formParam("id")));
+                .post("/account/change/password/", ctx -> {
+                    ctx.status(ChangePassword(ctx.formParam("login"),ctx.formParam("password"), ctx.formParam("newPassword")));
                 })
-                .post("/account/nickname/change/", ctx -> {
-                    ctx.status(ChangeNickname(ctx.formParam("nickname"), ctx.formParam("id")));
+                .post("/account/change/nickname/", ctx -> {
+                    ctx.status(ChangeNickname(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("newNickname") ));
                 })
                 .post("/channel/new/", ctx -> {
                     ctx.status(CreateChannel(ctx.formParam("name"), ctx.formParam("owner_id"), ctx.formParam("size")));
                 })
-                .get("/user/all", ctx -> {
-                    ctx.result(getUsers());
+                .post("/channel/delete/", ctx -> {
+                    ctx.status(DeleteChannel(ctx.formParam("channel_id"), ctx.formParam("owner_id")));
                 })
-                .get("/channel/all", ctx -> {
-                    ctx.result(getChannels());
+                .post("/user/all/", ctx -> {
+                    ctx.result(getUsers(ctx.formParam("login"), ctx.formParam("password")));
                 })
-                .get("/token/all", ctx -> {
-                    ctx.result(getTokens());
+                .post("/channel/all/", ctx -> {
+                    ctx.result(getChannels(ctx.formParam("login"), ctx.formParam("password")));
+                })
+                .post("/token/", ctx -> {
+                    ctx.result(getToken(ctx.formParam("login"), ctx.formParam("password")));
                 })
                 .start();
     }
