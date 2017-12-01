@@ -1,5 +1,6 @@
 package Controllers;
 
+import Models.Token;
 import Models.User;
 import org.javalite.activejdbc.Base;
 
@@ -28,13 +29,15 @@ public class UserController {
         return 401; // UNAUTHORIZED
     }
 
-    public static String getUsers(String login, String password) {
-        if (AccountControllers.AccountLogin(login, password).equals(202)) {
-            Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
-            String userFindAll = User.findAll().toJson(true);
-            Base.close();
+    public static String getUsers(String token) {
+        Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
+        String userFindAll = User.findAll().toJson(true);
+        String tokenQuery = Token.find("token = ?", token).toJson(true);
+        Base.close();
+
+        if (!tokenQuery.equals("[\n\n]")) {
             return userFindAll;
         }
-        return ("Unauthorized");
+        return ("FORBIDDEN");
     }
 }

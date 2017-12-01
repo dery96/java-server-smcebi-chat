@@ -1,14 +1,10 @@
 package Controllers;
 
 import Models.Channel;
-import Models.User;
+import Models.Token;
 import org.javalite.activejdbc.Base;
-import org.javalite.activejdbc.LazyList;
 
-import java.util.List;
 import java.util.Objects;
-
-import static Controllers.AccountControllers.AccountLogin;
 
 public class ChannelController {
     public static Integer CreateChannel(String name, String owner_id, String size) {
@@ -30,9 +26,9 @@ public class ChannelController {
     }
 
     public static Integer DeleteChannel(String channel_id, String owner_id) {
-        System.out.println("name: " + channel_id + " owner: " + owner_id);
+//        System.out.println("name: " + channel_id + " owner: " + owner_id);
         Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
-        String channelQuery = "id = '" + channel_id + "' and owner_id = '" + owner_id + "'";
+        String channelQuery = "name = '" + channel_id + "' and owner_id = '" + owner_id + "'";
         String channelJson = Channel.find(channelQuery).toJson(true);
 
         if (!channelJson.equals("[\n\n]")) {
@@ -46,12 +42,14 @@ public class ChannelController {
         return 403; // FORBIDDEN
     }
 
-    public static String GetChannels(String login, String password) {
-        if (AccountLogin(login, password).equals(202)) {
-            Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
-            String json = Channel.findAll().toJson(true);
-            Base.close();
-            return json;
+    public static String GetChannels(String token) {
+        Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
+        String channelFindAll = Channel.findAll().toJson(true);
+        String tokenQuery = Token.find("token = ?", token).toJson(true);
+        Base.close();
+
+        if (!tokenQuery.equals("[\n\n]")) {
+            return channelFindAll;
         }
         return ("FORBIDDEN");
     }

@@ -14,16 +14,16 @@ this is simple server chat application for university java project using:
 #### Api: 
 
 #### POST <br>
+
 `/account/login/ require: login, password` <br>
 `/account/new/ require: name, password, nickname gender (M or F)` <br>
-`/account/change/password/ require: login, password, newPassword` <br>
-`/account/change/nickname/ require: login, password, nickname` <br>
-`/user/all/ require: login, password` <br>
-`/channel/all/ require: login, password` <br>
-`/channel/new/ require: login, password, name, owner_id, size` <br>
-`/channel/delete/ require: login, password, user_id, channel_id` <br>
-`/token/get/ require: login, password ` <br>
-`/token/test/ require: login, password (ExpireSessionTest if expired then RefreshToken)` <br>
-`/token/refresh/ require: login, password` <br>
+`/account/change/password/ require: token, user_id, password, newPassword` <br>
+`/account/change/nickname/ require: token, user_id, password, newNickname` <br>
+`/user/all/ require: token` <br>
+`/channel/all/ require: token` <br>
+`/channel/new/ require: token, name, owner_id, size` <br>
+`/channel/delete/ require: token, user_id, channel_id` <br>
+`/token/test/ require: token (ExpireSessionTest if expired then RefreshToken)` <br>
+`/token/refresh/ require: token` <br>
 
 #### GET <br>

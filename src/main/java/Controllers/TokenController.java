@@ -3,9 +3,7 @@ package Controllers;
 import Models.Token;
 import Models.User;
 import org.javalite.activejdbc.Base;
-import org.javalite.activejdbc.LazyList;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -36,13 +34,10 @@ public class TokenController {
         // Simple user Token generator, [unique immutable UUID code]
         return UUID.randomUUID().toString();
     }
-//    public static Integer RefreshTokenSession() {
-//    }
 
-    public static String GetToken(String login, String password) {
+    public static String GetToken(String login) {
         Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
-        String userQuery = "login = '" + login + "' and password = '" + password + "'";
-        String userJson = User.find(userQuery).toJson(true);
+        String userJson = User.find("login = '" + login + "'").toJson(true);
         if (!Objects.equals(userJson, "[\n\n]")) {
             String tokenFind = Token.find("login = '" + login + "'").toJson(true);
             Base.close();
@@ -52,7 +47,7 @@ public class TokenController {
         return ("Unauthorized");
     }
 
-    public static void RefreshToken(String login) {
+    public static void RefreshToken(String token) {
         SimpleDateFormat dataFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         try {
@@ -67,7 +62,7 @@ public class TokenController {
                     ));
 
             Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
-            Token tokenQuery = Token.findFirst("login = ?", login);
+            Token tokenQuery = Token.findFirst("token = ?", token);
             tokenQuery.set("expire_time", out);
             tokenQuery.saveIt();
             Base.close();

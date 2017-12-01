@@ -6,15 +6,19 @@ import io.javalin.embeddedserver.jetty.websocket.WsSession;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.ObjectNode;
 import org.eclipse.jetty.websocket.api.Session;
 import org.javalite.activejdbc.Base;
 import org.json.JSONObject;
 
-import static Controllers.AccountControllers.ChangeNickname;
-import static Controllers.AccountControllers.ChangePassword;
+import static Controllers.AccountControllers.*;
 import static Controllers.ChannelController.DeleteChannel;
 import static Controllers.SessionController.ExpireSessionTest;
 import static Controllers.TokenController.GetToken;
@@ -29,7 +33,6 @@ import static j2html.TagCreator.span;
 import static Controllers.UserController.CreateUser;
 import static Controllers.ChannelController.CreateChannel;
 import static Controllers.ChannelController.GetChannels;
-import static Controllers.AccountControllers.AccountLogin;
 import static Controllers.UserController.getUsers;
 
 public class Server {
@@ -58,43 +61,63 @@ public class Server {
                     });
                 })
                 .post("/account/login/", ctx -> {
-                    ctx.status(AccountLogin(ctx.formParam("login"), ctx.formParam("password")));
+                    Integer accountLogin = AccountLogin(ctx.formParam("login"), ctx.formParam("password"));
+                    if (accountLogin.equals(202)) {
+                        RefreshToken(ctx.formParam("token"));
+
+                        String token = GetToken(ctx.formParam("login"));
+                        String id = GetId(ctx.formParam("login"));
+
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode jsonNode = mapper.readTree(token);
+                        JsonNode elem0 = (jsonNode).get(0);
+                        ((ObjectNode) elem0).put("id", id);
+
+                        ctx.result(mapper.writeValueAsString(jsonNode));
+                        ctx.status(202);
+                    }
+                    ctx.status(accountLogin); // UNAUTHORIZED
                 })
                 .post("/account/new/", ctx -> {
                     ctx.status(CreateUser(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("nickname"), ctx.formParam("gender")));
                 })
                 .post("/account/change/password/", ctx -> {
-                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
-                        ctx.status(ChangePassword(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("newPassword")));
+                    if (!ExpireSessionTest(ctx.formParam("token"))) {
+                        RefreshToken(ctx.formParam("token"));
+                        ctx.status(ChangePassword(ctx.formParam("id"), ctx.formParam("password"), ctx.formParam("newPassword")));
                     } else {
                         ctx.status(401); // UNAUTHORIZED
                     }
                 })
                 .post("/account/change/nickname/", ctx -> {
-                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
-                        ctx.status(ChangeNickname(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("newNickname")));
+                    if (!ExpireSessionTest(ctx.formParam("token"))) {
+                        RefreshToken(ctx.formParam("token"));
+                        ctx.status(ChangeNickname(ctx.formParam("id"), ctx.formParam("password"), ctx.formParam("newNickname")));
                     } else {
                         ctx.status(401); // UNAUTHORIZED
                     }
                 })
                 .post("/channel/new/", ctx -> {
-                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
+                    if (!ExpireSessionTest(ctx.formParam("token"))) {
+                        RefreshToken(ctx.formParam("token"));
                         ctx.status(CreateChannel(ctx.formParam("name"), ctx.formParam("owner_id"), ctx.formParam("size")));
                     } else {
                         ctx.status(401); // UNAUTHORIZED
                     }
                 })
                 .post("/channel/delete/", ctx -> {
-                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
+                    if (!ExpireSessionTest(ctx.formParam("token"))) {
+                        RefreshToken(ctx.formParam("token"));
                         ctx.status(DeleteChannel(ctx.formParam("channel_id"), ctx.formParam("owner_id")));
                     } else {
                         ctx.status(401); // UNAUTHORIZED
                     }
                 })
                 .post("/user/all/", ctx -> {
-                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
-                        String result = getUsers(ctx.formParam("login"), ctx.formParam("password"));
-                        if (!result.equals("FORBIDDEN")){
+                    if (!ExpireSessionTest(ctx.formParam("token"))) {
+                        RefreshToken(ctx.formParam("token"));
+                        String result = getUsers(ctx.formParam("token"));
+                        if (!result.equals("FORBIDDEN")) {
                             ctx.result(result);
                             ctx.status(202); // ACCEPTED
                         } else {
@@ -105,9 +128,10 @@ public class Server {
                     }
                 })
                 .post("/channel/all/", ctx -> {
-                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
-                        String result = GetChannels(ctx.formParam("login"), ctx.formParam("password"));
-                        if (!result.equals("FORBIDDEN")){
+                    if (!ExpireSessionTest(ctx.formParam("token"))) {
+                        RefreshToken(ctx.formParam("token"));
+                        String result = GetChannels(ctx.formParam("token"));
+                        if (!result.equals("FORBIDDEN")) {
                             ctx.result(result);
                             ctx.status(202); // ACCEPTED
                         } else {
@@ -117,20 +141,12 @@ public class Server {
                         ctx.status(401); // UNAUTHORIZED
                     }
                 })
-                .post("/token/get/", ctx -> {
-                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
-                        ctx.result(GetToken(ctx.formParam("login"), ctx.formParam("password")));
-                        ctx.status(202); // ACCEPTED
-                    } else {
-                        ctx.status(401); // UNAUTHORIZED
-                    }
-                })
                 .post("/token/test/", ctx -> {
-                    ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"));
+                    ExpireSessionTest(ctx.formParam("token"));
                 })
                 .post("/token/refresh/", ctx -> {
-                    if (AccountLogin(ctx.formParam("login"), ctx.formParam("password")).equals(202)) {
-                        RefreshToken(ctx.formParam("login"));
+                    if (!ExpireSessionTest(ctx.formParam("token"))) {
+                        RefreshToken(ctx.formParam("token"));
                         ctx.status(202); // ACCEPTED
                     } else {
                         ctx.status(403); // FORBIDDEN
