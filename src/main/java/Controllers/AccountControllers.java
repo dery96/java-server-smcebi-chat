@@ -6,9 +6,10 @@ import org.javalite.activejdbc.Base;
 import java.util.List;
 import java.util.Objects;
 
+import static Controllers.TokenController.RefreshToken;
+
 public class AccountControllers {
     public static Integer AccountLogin(String login, String password) {
-        System.out.println(login + ", " + password);
         Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
         String userQuery = "login = '" + login + "' and password = '" + password + "'";
         String userJson = User.find(userQuery).toJson(true);
@@ -20,7 +21,7 @@ public class AccountControllers {
         return 401; // UNAUTHORIZED
     }
 
-    public static Integer ChangePassword (String login, String password, String newPassword) {
+    public static Integer ChangePassword(String login, String password, String newPassword) {
         if (AccountLogin(login, password).equals(202)) {
             Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
             String userQuery = "login = '" + login + "' and password = '" + password + "'";
@@ -33,11 +34,12 @@ public class AccountControllers {
                 return 202; // ACCEPTED
             }
             Base.close();
-            return 400; // BAD REQUEST
+            return 403; // FORBIDDEN
         }
         return 401; // UNAUTHORIZED
     }
-    public static Integer ChangeNickname (String login, String password, String newNickname) {
+
+    public static Integer ChangeNickname(String login, String password, String newNickname) {
         if (AccountLogin(login, password).equals(202)) {
             Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
             String userQuery = "login = '" + login + "' and password = '" + password + "'";
@@ -50,7 +52,7 @@ public class AccountControllers {
                 return 202; // ACCEPTED
             }
             Base.close();
-            return 400; // BAD REQUEST
+            return 403; // FORBIDDEN
         }
         return 401; // UNAUTHORIZED
     }

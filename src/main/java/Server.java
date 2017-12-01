@@ -1,11 +1,14 @@
 
 // Server packages
+
 import io.javalin.Javalin;
 import io.javalin.embeddedserver.jetty.websocket.WsSession;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.eclipse.jetty.websocket.api.Session;
 import org.javalite.activejdbc.Base;
 import org.json.JSONObject;
@@ -13,7 +16,9 @@ import org.json.JSONObject;
 import static Controllers.AccountControllers.ChangeNickname;
 import static Controllers.AccountControllers.ChangePassword;
 import static Controllers.ChannelController.DeleteChannel;
-import static Controllers.TokenController.getToken;
+import static Controllers.SessionController.ExpireSessionTest;
+import static Controllers.TokenController.GetToken;
+import static Controllers.TokenController.RefreshToken;
 import static j2html.TagCreator.article;
 import static j2html.TagCreator.attrs;
 import static j2html.TagCreator.b;
@@ -23,7 +28,7 @@ import static j2html.TagCreator.span;
 // Models, Controlles
 import static Controllers.UserController.CreateUser;
 import static Controllers.ChannelController.CreateChannel;
-import static Controllers.ChannelController.getChannels;
+import static Controllers.ChannelController.GetChannels;
 import static Controllers.AccountControllers.AccountLogin;
 import static Controllers.UserController.getUsers;
 
@@ -34,7 +39,6 @@ public class Server {
     //    // wiadomosci zapsywac do pliku i jak ktos sie loguje do sesji ma wczytywać mu zawartosc tego
     public static void main(String[] args) {
         Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
-//        System.out.println(User.where("id = '1'")); // Wynikowym typem z Quary jest LazyList!
         Javalin.create()
                 .port(7171)
                 .enableStaticFiles("/public")
@@ -60,25 +64,77 @@ public class Server {
                     ctx.status(CreateUser(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("nickname"), ctx.formParam("gender")));
                 })
                 .post("/account/change/password/", ctx -> {
-                    ctx.status(ChangePassword(ctx.formParam("login"),ctx.formParam("password"), ctx.formParam("newPassword")));
+                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
+                        ctx.status(ChangePassword(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("newPassword")));
+                    } else {
+                        ctx.status(401); // UNAUTHORIZED
+                    }
                 })
                 .post("/account/change/nickname/", ctx -> {
-                    ctx.status(ChangeNickname(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("newNickname") ));
+                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
+                        ctx.status(ChangeNickname(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("newNickname")));
+                    } else {
+                        ctx.status(401); // UNAUTHORIZED
+                    }
                 })
                 .post("/channel/new/", ctx -> {
-                    ctx.status(CreateChannel(ctx.formParam("name"), ctx.formParam("owner_id"), ctx.formParam("size")));
+                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
+                        ctx.status(CreateChannel(ctx.formParam("name"), ctx.formParam("owner_id"), ctx.formParam("size")));
+                    } else {
+                        ctx.status(401); // UNAUTHORIZED
+                    }
                 })
                 .post("/channel/delete/", ctx -> {
-                    ctx.status(DeleteChannel(ctx.formParam("channel_id"), ctx.formParam("owner_id")));
+                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
+                        ctx.status(DeleteChannel(ctx.formParam("channel_id"), ctx.formParam("owner_id")));
+                    } else {
+                        ctx.status(401); // UNAUTHORIZED
+                    }
                 })
                 .post("/user/all/", ctx -> {
-                    ctx.result(getUsers(ctx.formParam("login"), ctx.formParam("password")));
+                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
+                        String result = getUsers(ctx.formParam("login"), ctx.formParam("password"));
+                        if (!result.equals("FORBIDDEN")){
+                            ctx.result(result);
+                            ctx.status(202); // ACCEPTED
+                        } else {
+                            ctx.status(403); // FORBIDDEN
+                        }
+                    } else {
+                        ctx.status(401); // UNAUTHORIZED
+                    }
                 })
                 .post("/channel/all/", ctx -> {
-                    ctx.result(getChannels(ctx.formParam("login"), ctx.formParam("password")));
+                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
+                        String result = GetChannels(ctx.formParam("login"), ctx.formParam("password"));
+                        if (!result.equals("FORBIDDEN")){
+                            ctx.result(result);
+                            ctx.status(202); // ACCEPTED
+                        } else {
+                            ctx.status(403); // FORBIDDEN
+                        }
+                    } else {
+                        ctx.status(401); // UNAUTHORIZED
+                    }
                 })
-                .post("/token/", ctx -> {
-                    ctx.result(getToken(ctx.formParam("login"), ctx.formParam("password")));
+                .post("/token/get/", ctx -> {
+                    if (!ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"))) {
+                        ctx.result(GetToken(ctx.formParam("login"), ctx.formParam("password")));
+                        ctx.status(202); // ACCEPTED
+                    } else {
+                        ctx.status(401); // UNAUTHORIZED
+                    }
+                })
+                .post("/token/test/", ctx -> {
+                    ExpireSessionTest(ctx.formParam("login"), ctx.formParam("password"));
+                })
+                .post("/token/refresh/", ctx -> {
+                    if (AccountLogin(ctx.formParam("login"), ctx.formParam("password")).equals(202)) {
+                        RefreshToken(ctx.formParam("login"));
+                        ctx.status(202); // ACCEPTED
+                    } else {
+                        ctx.status(403); // FORBIDDEN
+                    }
                 })
                 .start();
     }

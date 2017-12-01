@@ -26,7 +26,7 @@ public class ChannelController {
             return 201; // SUCCEED
         }
         Base.close();
-        return 401; // UNAUTHORIZED
+        return 403; // FORBIDDEN
     }
 
     public static Integer DeleteChannel(String channel_id, String owner_id) {
@@ -43,16 +43,16 @@ public class ChannelController {
             return 202; // Accepted SUCCEED in Delete
         }
         Base.close();
-        return 401; // UNAUTHORIZED
+        return 403; // FORBIDDEN
     }
 
-    public static String getChannels(String login, String password) {
+    public static String GetChannels(String login, String password) {
         if (AccountLogin(login, password).equals(202)) {
             Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
             String json = Channel.findAll().toJson(true);
             Base.close();
             return json;
         }
-        return ("Unauthorized");
+        return ("FORBIDDEN");
     }
 }

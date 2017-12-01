@@ -20,8 +20,10 @@ this is simple server chat application for university java project using:
 `/account/change/nickname/ require: login, password, nickname` <br>
 `/user/all/ require: login, password` <br>
 `/channel/all/ require: login, password` <br>
-`/channel/new/ require: name, owner_id, size` <br>
+`/channel/new/ require: login, password, name, owner_id, size` <br>
 `/channel/delete/ require: login, password, user_id, channel_id` <br>
-`/token/ require: login, password ` <br>
+`/token/get/ require: login, password ` <br>
+`/token/test/ require: login, password (ExpireSessionTest if expired then RefreshToken)`
+`/token/refresh/ require: login, password`
 
 #### GET <br>
