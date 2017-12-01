@@ -23,7 +23,7 @@ this is simple server chat application for university java project using:
 `/channel/new/ require: login, password, name, owner_id, size` <br>
 `/channel/delete/ require: login, password, user_id, channel_id` <br>
 `/token/get/ require: login, password ` <br>
-`/token/test/ require: login, password (ExpireSessionTest if expired then RefreshToken)`
-`/token/refresh/ require: login, password`
+`/token/test/ require: login, password (ExpireSessionTest if expired then RefreshToken)` <br>
+`/token/refresh/ require: login, password` <br>
 
 #### GET <br>
