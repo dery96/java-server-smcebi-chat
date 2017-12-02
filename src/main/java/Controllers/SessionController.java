@@ -1,5 +1,6 @@
 package Controllers;
 
+import Helpers.DbConnection;
 import Models.Token;
 import org.javalite.activejdbc.Base;
 
@@ -8,10 +9,9 @@ import java.util.Date;
 
 public class SessionController {
     public static Boolean ExpireSessionTest(String token) {
-        Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
+//        DbConnection.BaseConnection();
         Token tokenQuery = Token.findFirst("token = ?", token);
         Date expire_time = (Date) tokenQuery.get("expire_time");
-        Base.close();
         try {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             expire_time = dateFormat.parse(dateFormat.format(expire_time));

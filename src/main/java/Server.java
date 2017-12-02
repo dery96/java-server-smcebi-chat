@@ -1,19 +1,15 @@
 
 // Server packages
 
+import Helpers.DbConnection;
 import io.javalin.Javalin;
 import io.javalin.embeddedserver.jetty.websocket.WsSession;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ArrayNode;
-import org.codehaus.jackson.node.ObjectNode;
 import org.eclipse.jetty.websocket.api.Session;
 import org.javalite.activejdbc.Base;
 import org.json.JSONObject;
@@ -21,6 +17,7 @@ import org.json.JSONObject;
 import static Controllers.AccountControllers.*;
 import static Controllers.ChannelController.DeleteChannel;
 import static Controllers.SessionController.ExpireSessionTest;
+import static Controllers.TokenController.CreateUserToken;
 import static Controllers.TokenController.GetToken;
 import static Controllers.TokenController.RefreshToken;
 import static j2html.TagCreator.article;
@@ -41,7 +38,6 @@ public class Server {
 
     //    // wiadomosci zapsywac do pliku i jak ktos sie loguje do sesji ma wczytywać mu zawartosc tego
     public static void main(String[] args) {
-        Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd");
         Javalin.create()
                 .port(7171)
                 .enableStaticFiles("/public")
@@ -61,27 +57,34 @@ public class Server {
                     });
                 })
                 .post("/account/login/", ctx -> {
+                    DbConnection.BaseConnection();
                     Integer accountLogin = AccountLogin(ctx.formParam("login"), ctx.formParam("password"));
                     if (accountLogin.equals(202)) {
-                        RefreshToken(ctx.formParam("token"));
 
                         String token = GetToken(ctx.formParam("login"));
                         String id = GetId(ctx.formParam("login"));
 
-                        ObjectMapper mapper = new ObjectMapper();
-                        JsonNode jsonNode = mapper.readTree(token);
-                        JsonNode elem0 = (jsonNode).get(0);
-                        ((ObjectNode) elem0).put("id", id);
+                        RefreshToken(token);
+                        JSONObject obj = new JSONObject();
+                        obj.put("token", token);
+                        obj.put("id", id);
 
-                        ctx.result(mapper.writeValueAsString(jsonNode));
-                        ctx.status(202);
+                        ctx.result(obj.toString());
+                        ctx.status(202); // ACCEPTED
                     }
                     ctx.status(accountLogin); // UNAUTHORIZED
                 })
                 .post("/account/new/", ctx -> {
-                    ctx.status(CreateUser(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("nickname"), ctx.formParam("gender")));
+                    DbConnection.BaseConnection();
+                    Integer createStatus = CreateUser(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("nickname"), ctx.formParam("gender"));
+                    if (createStatus == 201) {
+                        ctx.status(CreateUserToken(ctx.formParam("login")));
+                    } else {
+                        ctx.status(createStatus);
+                    }
                 })
                 .post("/account/change/password/", ctx -> {
+                    DbConnection.BaseConnection();
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         ctx.status(ChangePassword(ctx.formParam("id"), ctx.formParam("password"), ctx.formParam("newPassword")));
@@ -90,6 +93,7 @@ public class Server {
                     }
                 })
                 .post("/account/change/nickname/", ctx -> {
+                    DbConnection.BaseConnection();
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         ctx.status(ChangeNickname(ctx.formParam("id"), ctx.formParam("password"), ctx.formParam("newNickname")));
@@ -98,6 +102,7 @@ public class Server {
                     }
                 })
                 .post("/channel/new/", ctx -> {
+                    DbConnection.BaseConnection();
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         ctx.status(CreateChannel(ctx.formParam("name"), ctx.formParam("owner_id"), ctx.formParam("size")));
@@ -106,6 +111,7 @@ public class Server {
                     }
                 })
                 .post("/channel/delete/", ctx -> {
+                    DbConnection.BaseConnection();
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         ctx.status(DeleteChannel(ctx.formParam("channel_id"), ctx.formParam("owner_id")));
@@ -114,6 +120,7 @@ public class Server {
                     }
                 })
                 .post("/user/all/", ctx -> {
+                    DbConnection.BaseConnection();
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         String result = getUsers(ctx.formParam("token"));
@@ -128,6 +135,7 @@ public class Server {
                     }
                 })
                 .post("/channel/all/", ctx -> {
+                    DbConnection.BaseConnection();
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         String result = GetChannels(ctx.formParam("token"));
@@ -142,9 +150,11 @@ public class Server {
                     }
                 })
                 .post("/token/test/", ctx -> {
+                    DbConnection.BaseConnection();
                     ExpireSessionTest(ctx.formParam("token"));
                 })
                 .post("/token/refresh/", ctx -> {
+                    DbConnection.BaseConnection();
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         ctx.status(202); // ACCEPTED
