@@ -20,17 +20,13 @@ import static Controllers.SessionController.ExpireSessionTest;
 import static Controllers.TokenController.CreateUserToken;
 import static Controllers.TokenController.GetToken;
 import static Controllers.TokenController.RefreshToken;
-import static j2html.TagCreator.article;
-import static j2html.TagCreator.attrs;
-import static j2html.TagCreator.b;
-import static j2html.TagCreator.p;
-import static j2html.TagCreator.span;
 
 // Models, Controlles
 import static Controllers.UserController.CreateUser;
 import static Controllers.ChannelController.CreateChannel;
 import static Controllers.ChannelController.GetChannels;
 import static Controllers.UserController.getUsers;
+import static j2html.TagCreator.*;
 
 public class Server {
     private static Map<WsSession, String> userUsernameMap = new ConcurrentHashMap<>();
@@ -41,11 +37,12 @@ public class Server {
         Javalin.create()
                 .port(7171)
                 .enableStaticFiles("/public")
+                .enableCorsForAllOrigins()
                 .ws("/chat", ws -> {
                     ws.onConnect(session -> {
                         String username = "User" + nextUserNumber++;
                         userUsernameMap.put(session, username);
-                        broadcastMessage("Server", (username + " joined the chat"));
+                        broadcastMessage("Server", (username     + " joined the chat"));
                     });
                     ws.onClose((session, status, message) -> {
                         String username = userUsernameMap.get(session);
@@ -57,17 +54,26 @@ public class Server {
                     });
                 })
                 .post("/account/login/", ctx -> {
+                    ctx.header("Access-Control-Allow-Headers","*");
+                    ctx.header("Access-Control-Allow-Origin","*");
+                    ctx.header("Access-Control-Allow-Credentials", "true");
+                    ctx.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
                     DbConnection.BaseConnection();
                     Integer accountLogin = AccountLogin(ctx.formParam("login"), ctx.formParam("password"));
                     if (accountLogin.equals(202)) {
 
                         String token = GetToken(ctx.formParam("login"));
                         String id = GetId(ctx.formParam("login"));
+                        Models.User userData = GetUser(ctx.formParam("login"), ctx.formParam("password"));
 
                         RefreshToken(token);
+
                         JSONObject obj = new JSONObject();
                         obj.put("token", token);
                         obj.put("id", id);
+                        obj.put("nickname", userData.get("nickname"));
+                        obj.put("gender", userData.get("gender"));
+                        obj.put("registration_date", userData.get("registration_date"));
 
                         ctx.result(obj.toString());
                         ctx.status(202); // ACCEPTED
@@ -75,6 +81,9 @@ public class Server {
                     ctx.status(accountLogin); // UNAUTHORIZED
                 })
                 .post("/account/new/", ctx -> {
+                    ctx.header("Access-Control-Allow-Headers","*");
+                    ctx.header("Access-Control-Allow-Credentials", "true");
+                    ctx.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
                     DbConnection.BaseConnection();
                     Integer createStatus = CreateUser(ctx.formParam("login"), ctx.formParam("password"), ctx.formParam("nickname"), ctx.formParam("gender"));
                     if (createStatus == 201) {

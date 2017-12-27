@@ -27,6 +27,17 @@ public class AccountControllers {
         return userJson;
     }
 
+    public static Models.User GetUser(String login, String password) {
+//        DbConnection.BaseConnection();
+        String userQuery = "login = '" + login + "' and password = '" + password + "'";
+        String userJson = User.find(userQuery).toString();
+        if (!Objects.equals(userJson, "[\n\n]")) {
+            List<User> list = User.find("login = '" + login + "'");
+            return list.get(0);
+        }
+        return new User();
+    }
+
     public static Integer ChangePassword(String id, String password, String newPassword) {
 //        DbConnection.BaseConnection();
         String userQuery = "id = '" + id + "' and password = '" + password + "'";
