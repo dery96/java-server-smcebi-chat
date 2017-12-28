@@ -16,6 +16,7 @@ import org.json.JSONObject;
 
 import static Controllers.AccountControllers.*;
 import static Controllers.ChannelController.DeleteChannel;
+import static Controllers.SessionController.CloseSession;
 import static Controllers.SessionController.ExpireSessionTest;
 import static Controllers.TokenController.CreateUserToken;
 import static Controllers.TokenController.GetToken;
@@ -74,11 +75,20 @@ public class Server {
                         obj.put("nickname", userData.get("nickname"));
                         obj.put("gender", userData.get("gender"));
                         obj.put("registration_date", userData.get("registration_date"));
+                        obj.put("login", userData.get("login"));
 
                         ctx.result(obj.toString());
                         ctx.status(202); // ACCEPTED
                     }
                     ctx.status(accountLogin); // UNAUTHORIZED
+                })
+                .post("/account/logout/", ctx -> {
+                    DbConnection.BaseConnection();
+                    if (CloseSession(ctx.formParam("token"))) {
+                        ctx.status(201); // SUCCESS
+                    } else {
+                        ctx.status(401);
+                    }
                 })
                 .post("/account/new/", ctx -> {
                     ctx.header("Access-Control-Allow-Headers","*");
