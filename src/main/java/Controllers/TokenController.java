@@ -17,22 +17,16 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class TokenController {
-    public static Integer CreateUserToken(String login) {
-        Base.detach();
-        Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd") ;
-        String tokenJson = Token.find("login = ?", login).toJson(true);
-        System.out.println(tokenJson);
+    public static Integer CreateUserToken(String login) throws java.text.ParseException {
+            String tokenJson = Token.find("login = ?", login).toJson(true);
         if (Objects.equals(tokenJson, "[\n\n]")) {
-//            Base.open("org.sqlite.JDBC", "jdbc:sqlite:src/main/resources/public/chat.db", "root", "p@ssw0rd") ;
-            String generatedtoken = GenerateToken();
-            Token newToken = new Token();
-            newToken.set("token", generatedtoken);
-            newToken.set("login", login);
-            System.out.println("czemu nie sejwuje kurdełe");
-            newToken.saveIt();
+            Token tok = new Token();
+            tok.set("token", GenerateToken());
+            tok.set("login", login);
+            tok.defrost();
+            tok.saveIt();
             return 201; // CREATED
         }
-        Base.close();
         return 403; // Forbidden REQUEST
     }
 
@@ -51,7 +45,20 @@ public class TokenController {
         }
         return ("Unauthorized");
     }
+    public static String GenerateExpireTime() throws java.text.ParseException {
+        SimpleDateFormat dataFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
+        Date now = dataFormat.parse(dataFormat.format(new Date()));
+        LocalDateTime yourDate = LocalDateTime.ofInstant(now.toInstant(), ZoneId.systemDefault());
+        yourDate = yourDate.plus(Duration.parse("PT3H"));
+
+        String out = dataFormat.format(
+                Date.from(
+                        yourDate.atZone(
+                                ZoneId.systemDefault()).toInstant()
+                ));
+        return out;
+    }
     public static void RefreshToken(String token) throws java.text.ParseException {
 //        DbConnection.BaseConnection();
         SimpleDateFormat dataFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

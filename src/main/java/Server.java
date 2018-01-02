@@ -2,6 +2,7 @@
 // Server packages
 
 import Helpers.DbConnection;
+import Models.User;
 import io.javalin.Javalin;
 import io.javalin.embeddedserver.jetty.websocket.WsSession;
 
@@ -65,7 +66,7 @@ public class Server {
 
                         String token = GetToken(ctx.formParam("login"));
                         String id = GetId(ctx.formParam("login"));
-                        Models.User userData = GetUser(ctx.formParam("login"), ctx.formParam("password"));
+                        User userData = GetUser(ctx.formParam("login"), ctx.formParam("password"));
 
                         RefreshToken(token);
 

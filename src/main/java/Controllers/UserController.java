@@ -3,6 +3,7 @@ package Controllers;
 import Helpers.DbConnection;
 import Models.Token;
 import Models.User;
+import org.javalite.activejdbc.Base;
 
 import java.sql.Connection;
 import java.sql.SQLException;
