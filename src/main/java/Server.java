@@ -40,15 +40,20 @@ public class Server {
                 .port(7171)
                 .enableStaticFiles("/public")
                 .enableCorsForAllOrigins()
-                .ws("/chat", ws -> {
+                .enableCorsForOrigin("origin")
+                .enableCorsForOrigin("*")
+                .ws("/chat/*", ws -> {
                     ws.onConnect(session -> {
-                        String username = "User" + nextUserNumber++;
-                        userUsernameMap.put(session, username);
-                        broadcastMessage("Server", (username     + " joined the chat"));
+                        if (!userUsernameMap.values().contains(session.queryParam("name"))) {
+                            userUsernameMap.put(session, session.queryParam("name"));
+
+                        }
+                        broadcastMessage("Server", (session.queryParam("name")     + " joined the chat"));
                     });
                     ws.onClose((session, status, message) -> {
                         String username = userUsernameMap.get(session);
                         userUsernameMap.remove(session);
+                        System.out.println("PO" + userUsernameMap.toString());
                         broadcastMessage("Server", (username + " left the chat"));
                     });
                     ws.onMessage((session, message) -> {
@@ -191,7 +196,9 @@ public class Server {
             try {
                 session.send(
                         new JSONObject()
-                                .put("userMessage", createHtmlMessageFromSender(sender, message))
+                                .put("author", sender)
+                                .put("text", message)
+                                .put("date", new SimpleDateFormat("HH:mm:ss").format(new Date()))
                                 .put("userlist", userUsernameMap.values()).toString()
                 );
             } catch (Exception e) {

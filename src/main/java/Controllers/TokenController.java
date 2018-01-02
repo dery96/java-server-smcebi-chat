@@ -1,12 +1,8 @@
 package Controllers;
 
-import Helpers.DbConnection;
 import Models.Token;
 import Models.User;
-import org.javalite.activejdbc.Base;
-import org.javalite.activejdbc.DB;
 
-import java.sql.Connection;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
