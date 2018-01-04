@@ -32,7 +32,6 @@ public class TokenController {
     }
 
     public static String GetToken(String login) {
-//        DbConnection.BaseConnection();
         String userQuery = "login = '" + login + "'";
         String userJson = User.find(userQuery).toJson(true);
         if (!Objects.equals(userJson, "[\n\n]")) {
@@ -56,7 +55,6 @@ public class TokenController {
         return out;
     }
     public static void RefreshToken(String token) throws java.text.ParseException {
-//        DbConnection.BaseConnection();
         SimpleDateFormat dataFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         Date now = dataFormat.parse(dataFormat.format(new Date()));

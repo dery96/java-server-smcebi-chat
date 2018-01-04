@@ -1,9 +1,6 @@
 package Controllers;
 
-import Helpers.DbConnection;
 import Models.Token;
-import Models.User;
-import org.javalite.activejdbc.Base;
 import java.util.Objects;
 
 import java.text.SimpleDateFormat;
@@ -14,7 +11,6 @@ import java.util.Date;
 
 public class SessionController {
     public static Boolean ExpireSessionTest(String token) {
-//        DbConnection.BaseConnection();
         Token tokenQuery = Token.findFirst("token = ?", token);
         Date expire_time = (Date) tokenQuery.get("expire_time");
         try {
@@ -33,7 +29,6 @@ public class SessionController {
         return false;
     }
     public static Boolean CloseSession(String token) throws java.text.ParseException {
-//        DbConnection.BaseConnection();
         String tokenJson = Token.find("token = ?", token).toJson(true);
         if (!Objects.equals(tokenJson, "[\n\n]")) {
             Token tokenQuery = Token.findFirst("token = ?", token);

@@ -16,7 +16,7 @@ import org.javalite.activejdbc.Base;
 import org.json.JSONObject;
 
 import static Controllers.AccountControllers.*;
-import static Controllers.ChannelController.DeleteChannel;
+import static Controllers.ChannelController.*;
 import static Controllers.SessionController.CloseSession;
 import static Controllers.SessionController.ExpireSessionTest;
 import static Controllers.TokenController.CreateUserToken;
@@ -25,16 +25,14 @@ import static Controllers.TokenController.RefreshToken;
 
 // Models, Controlles
 import static Controllers.UserController.CreateUser;
-import static Controllers.ChannelController.CreateChannel;
-import static Controllers.ChannelController.GetChannels;
 import static Controllers.UserController.getUsers;
 import static j2html.TagCreator.*;
 
 public class Server {
-    private static Map<WsSession, String> userUsernameMap = new ConcurrentHashMap<>();
-    private static int nextUserNumber = 1; // Assign to username for next connecting user
+    private static Map<String, String> activeUsersList = new ConcurrentHashMap<>();
+    private static Map<WsSession, String> channelUsernameMap = new ConcurrentHashMap<>();
+    private static Map<WsSession, String> sessionList = new ConcurrentHashMap<>();
 
-    //    // wiadomosci zapsywac do pliku i jak ktos sie loguje do sesji ma wczytywać mu zawartosc tego
     public static void main(String[] args) {
         Javalin.create()
                 .port(7171)
@@ -44,20 +42,39 @@ public class Server {
                 .enableCorsForOrigin("*")
                 .ws("/chat/*", ws -> {
                     ws.onConnect(session -> {
-                        if (!userUsernameMap.values().contains(session.queryParam("name"))) {
-                            userUsernameMap.put(session, session.queryParam("name"));
-
+//                        System.out.println("Informacje testowe:");
+//                        System.out.println(session.queryParam("name"));
+//                        System.out.println(session.queryParam("token"));
+//                        System.out.println(session.queryParam("channel"));
+//                        if (!activeUsersList.values().contains(session.queryParam("name"))) {
+////                            activeUsersList.put(session, session.queryParam("name"));
+//
+//                        }
+                        if (session.queryParam("channel") == null) {
+                            sessionList.put(session,  session.queryParam("name"));
+                            onlineUsers("ONLINE_USERS");
+                            initBroadcast(session, "CHANNELS", session.queryParam("token"), session.queryParam("name"));
                         }
-                        broadcastMessage("Server", (session.queryParam("name")     + " joined the chat"));
+//                            else {
+//                                if (!channelList.values().contains(session.queryParam("channel"))) {
+//                                    channelList.put( ???????????,session.queryParam("channel"));
+//                                    channelUsernameMap.put(session, session.queryParam("name"));
+//                                }
+//                            }
+//                        broadcastMessage("Server", (session.queryParam("name")     + " joined the chat"), "MESSAGE");
                     });
                     ws.onClose((session, status, message) -> {
-                        String username = userUsernameMap.get(session);
-                        userUsernameMap.remove(session);
-                        System.out.println("PO" + userUsernameMap.toString());
-                        broadcastMessage("Server", (username + " left the chat"));
+                        String username = sessionList.get(session);
+                        sessionList.remove(session);
+//                        channelUsernameMap.remove(session);
+                        activeUsersList.remove(username);
+                        onlineUsers("ONLINE_USERS");
+                        System.out.println(username + " wychodzi");
+                        System.out.println(activeUsersList);
+//                        broadcastMessage("Server", (username + " left the chat"));
                     });
                     ws.onMessage((session, message) -> {
-                        broadcastMessage(userUsernameMap.get(session), message);
+//                        broadcastMessage(channelUsernameMap.get(session), message);
                     });
                 })
                 .post("/account/login/", ctx -> {
@@ -65,7 +82,9 @@ public class Server {
                     ctx.header("Access-Control-Allow-Origin","*");
                     ctx.header("Access-Control-Allow-Credentials", "true");
                     ctx.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
-                    DbConnection.BaseConnection();
+                    if (!Base.hasConnection()) {
+                        DbConnection.BaseConnection();
+                    }
                     Integer accountLogin = AccountLogin(ctx.formParam("login"), ctx.formParam("password"));
                     if (accountLogin.equals(202)) {
 
@@ -83,14 +102,20 @@ public class Server {
                         obj.put("registration_date", userData.get("registration_date"));
                         obj.put("login", userData.get("login"));
 
+                        activeUsersList.put(token, (String)userData.get("nickname"));
+
                         ctx.result(obj.toString());
                         ctx.status(202); // ACCEPTED
                     }
                     ctx.status(accountLogin); // UNAUTHORIZED
                 })
                 .post("/account/logout/", ctx -> {
-                    DbConnection.BaseConnection();
+                    if (!Base.hasConnection()) {
+                        DbConnection.BaseConnection();
+                    }
                     if (CloseSession(ctx.formParam("token"))) {
+                        activeUsersList.remove(ctx.formParam("token"));
+                        onlineUsers("ONLINE_USERS");
                         ctx.status(201); // SUCCESS
                     } else {
                         ctx.status(401);
@@ -109,7 +134,9 @@ public class Server {
                     }
                 })
                 .post("/account/change/password/", ctx -> {
-                    DbConnection.BaseConnection();
+                    if (!Base.hasConnection()) {
+                        DbConnection.BaseConnection();
+                    }
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         ctx.status(ChangePassword(ctx.formParam("id"), ctx.formParam("password"), ctx.formParam("newPassword")));
@@ -118,7 +145,9 @@ public class Server {
                     }
                 })
                 .post("/account/change/nickname/", ctx -> {
-                    DbConnection.BaseConnection();
+                    if (!Base.hasConnection()) {
+                        DbConnection.BaseConnection();
+                    }
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         ctx.status(ChangeNickname(ctx.formParam("id"), ctx.formParam("password"), ctx.formParam("newNickname")));
@@ -127,7 +156,9 @@ public class Server {
                     }
                 })
                 .post("/channel/new/", ctx -> {
-                    DbConnection.BaseConnection();
+                    if (!Base.hasConnection()) {
+                        DbConnection.BaseConnection();
+                    }
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         ctx.status(CreateChannel(ctx.formParam("name"), ctx.formParam("owner_id"), ctx.formParam("size")));
@@ -136,7 +167,9 @@ public class Server {
                     }
                 })
                 .post("/channel/delete/", ctx -> {
-                    DbConnection.BaseConnection();
+                    if (!Base.hasConnection()) {
+                        DbConnection.BaseConnection();
+                    }
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         ctx.status(DeleteChannel(ctx.formParam("channel_id"), ctx.formParam("owner_id")));
@@ -145,7 +178,9 @@ public class Server {
                     }
                 })
                 .post("/user/all/", ctx -> {
-                    DbConnection.BaseConnection();
+                    if (!Base.hasConnection()) {
+                        DbConnection.BaseConnection();
+                    }
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         String result = getUsers(ctx.formParam("token"));
@@ -160,7 +195,9 @@ public class Server {
                     }
                 })
                 .post("/channel/all/", ctx -> {
-                    DbConnection.BaseConnection();
+                    if (!Base.hasConnection()) {
+                        DbConnection.BaseConnection();
+                    }
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         String result = GetChannels(ctx.formParam("token"));
@@ -175,11 +212,15 @@ public class Server {
                     }
                 })
                 .post("/token/test/", ctx -> {
-                    DbConnection.BaseConnection();
+                    if (!Base.hasConnection()) {
+                        DbConnection.BaseConnection();
+                    }
                     ExpireSessionTest(ctx.formParam("token"));
                 })
                 .post("/token/refresh/", ctx -> {
-                    DbConnection.BaseConnection();
+                    if (!Base.hasConnection()) {
+                        DbConnection.BaseConnection();
+                    }
                     if (!ExpireSessionTest(ctx.formParam("token"))) {
                         RefreshToken(ctx.formParam("token"));
                         ctx.status(202); // ACCEPTED
@@ -190,16 +231,50 @@ public class Server {
                 .start();
     }
 
-    // Sends a message from one user to all users, along with a list of current usernames
-    private static void broadcastMessage(String sender, String message) {
-        userUsernameMap.keySet().stream().filter(Session::isOpen).forEach(session -> {
+    private static void onlineUsers(String type) {
+        sessionList.keySet().stream().filter(Session::isOpen).forEach(session -> {
             try {
                 session.send(
                         new JSONObject()
+                                .put("type", type)
+                                .put("onlineUsers", activeUsersList.values()).toString()
+
+                );
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+    private static void initBroadcast(WsSession session, String type, String token, String login) {
+        if (!Base.hasConnection()) {
+            DbConnection.BaseConnection();
+        }
+//        System.out.println(GetUserSubscribedChannels(token, login));
+        if (session.isOpen()) {
+            try {
+                session.send(
+                        new JSONObject()
+                                .put("type", type)
+                                .put("channels", GetChannels(token)).toString()
+                );
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // Sends a message from one user to all users, along with a list of current usernames
+    private static void broadcastMessage(String sender, String message, String type) {
+        channelUsernameMap.keySet().stream().filter(Session::isOpen).forEach(session -> {
+            try {
+                session.send(
+                        new JSONObject()
+                                .put("type", type)
                                 .put("author", sender)
                                 .put("text", message)
                                 .put("date", new SimpleDateFormat("HH:mm:ss").format(new Date()))
-                                .put("userlist", userUsernameMap.values()).toString()
+                                .put("onlineUsers", activeUsersList.values()).toString()
+
                 );
             } catch (Exception e) {
                 e.printStackTrace();

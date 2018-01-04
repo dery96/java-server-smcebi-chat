@@ -7,7 +7,6 @@ import java.util.Objects;
 
 public class AccountControllers {
     public static Integer AccountLogin(String login, String password) {
-//        DbConnection.BaseConnection();
         String userQuery = "login = '" + login + "' and password = '" + password + "'";
         String userJson = User.find(userQuery).toJson(true);
         if (!Objects.equals(userJson, "[\n\n]")) {
@@ -17,7 +16,6 @@ public class AccountControllers {
     }
 
     public static String GetId(String login) {
-//        DbConnection.BaseConnection();
         String userQuery = "login = '" + login + "'";
         String userJson = User.find(userQuery).toString();
         if (!Objects.equals(userJson, "[\n\n]")) {
@@ -28,7 +26,6 @@ public class AccountControllers {
     }
 
     public static Models.User GetUser(String login, String password) {
-//        DbConnection.BaseConnection();
         String userQuery = "login = '" + login + "' and password = '" + password + "'";
         String userJson = User.find(userQuery).toString();
         if (!Objects.equals(userJson, "[\n\n]")) {
@@ -39,7 +36,6 @@ public class AccountControllers {
     }
 
     public static Integer ChangePassword(String id, String password, String newPassword) {
-//        DbConnection.BaseConnection();
         String userQuery = "id = '" + id + "' and password = '" + password + "'";
         List<User> list = User.find(userQuery);
         if (!list.get(0).toJson(true).equals("[\n\n]")) {
@@ -52,7 +48,6 @@ public class AccountControllers {
     }
 
     public static Integer ChangeNickname(String id, String password, String newNickname) {
-//        DbConnection.BaseConnection();
         String userQuery = "id = '" + id + "' and password = '" + password + "'";
         List<User> list = User.find(userQuery);
         if (!list.get(0).toJson(true).equals("[\n\n]")) {
