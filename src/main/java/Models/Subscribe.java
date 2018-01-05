@@ -6,6 +6,6 @@ import org.javalite.activejdbc.annotations.Many2Many;
 import org.javalite.activejdbc.annotations.Table;
 
 @IdName("id")
-@Table("subscribed")
-public class Subscribed extends Model {
+@Table("subscribe")
+public class Subscribe extends Model {
 }
