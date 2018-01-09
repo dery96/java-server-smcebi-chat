@@ -1,9 +1,6 @@
 package Controllers;
 
-import Helpers.DbConnection;
-import Models.Channel;
 import Models.Message;
-import org.javalite.activejdbc.Base;
 
 public class MessageController {
     public static void CreateTextMessage(String user_id, String channel_id, String data) {

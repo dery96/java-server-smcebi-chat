@@ -1,7 +1,9 @@
 
 // Server packages
 
+import Helpers.Connections;
 import Helpers.DbConnection;
+import Helpers.WebsocketChannel;
 import Models.User;
 import io.javalin.Javalin;
 import io.javalin.embeddedserver.jetty.websocket.WsSession;
@@ -13,7 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.javalite.activejdbc.Base;
+import org.json.JSONArray;
 import org.json.JSONObject;
+
 
 import static Controllers.AccountControllers.*;
 import static Controllers.ChannelController.*;
@@ -29,10 +33,9 @@ import static Controllers.UserController.getUsers;
 import static j2html.TagCreator.*;
 
 public class Server {
-    private static Map<String, String> activeUsersList = new ConcurrentHashMap<>();
-    private static Map<String, Map> channelUsernameMap = new ConcurrentHashMap<>();
-    //    private static Map<WsSession, String> userChannelSession = new ConcurrentHashMap<>();
+    private static Map<String, String> activeUsersList = new ConcurrentHashMap<>(); //
     private static Map<WsSession, String> sessionList = new ConcurrentHashMap<>();
+    private static Map<String, WebsocketChannel> channelMap = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         Javalin.create()
@@ -43,57 +46,72 @@ public class Server {
                 .enableCorsForOrigin("*")
                 .ws("/chat/*", ws -> {
                     ws.onConnect(session -> {
-//                        if (!activeUsersList.values().contains(session.queryParam("name"))) {
-////                            activeUsersList.put(session, session.queryParam("name"));
-//
-//                        }
-                        if (session.queryParam("channel") == null) {
-                            sessionList.put(session, session.queryParam("name"));
-                            onlineUsers("ONLINE_USERS");
-                            initBroadcast(session, "CHANNELS", session.queryParam("token"), session.queryParam("name"));
-                        } else {
-                            if (!channelUsernameMap.containsKey(session.queryParam("channel"))) {
-                                // Jezeli Haszmapa tego kanalu juz jest utworzona
-                                Map<WsSession, String> usersInChannels = new ConcurrentHashMap<>();
-                                usersInChannels.put(session, session.queryParam("name"));
+                        String channel_id = session.queryParam("id");
+                        String channel_name = session.queryParam("channel_name");
 
-                                String msg = (session.queryParam("name") + " joined the chat");
-                                System.out.println(msg);
-                                broadcastMessage(usersInChannels, "Server", msg, "MESSAGE");
+                        String username = session.queryParam("username");
+                        String token = session.queryParam("token");
 
-                                channelUsernameMap.put(session.queryParam("channel"), usersInChannels);
-                            } else {
-                                if (!channelUsernameMap.get(session.queryParam("channel"))
-                                        .values().contains(session.queryParam("name"))) {
-                                    // Jezeli sesja uzytkownika nie znajduje sie w Haszmapie Kanału do którego użytkownik
-                                    // chce dolaczyć to dodajemy go.
-//                                    channels.
-                                    channelUsernameMap.get(session.queryParam("channel")).put(session, session.queryParam("name"));
-
-                                    String msg = "Witaj ziemniaczku :*";
-                                    System.out.println(msg);
-                                    broadcastMessage(channelUsernameMap.get(session.queryParam("channel")), "Server", msg, "MESSAGE");
-                                }
+                        if (channel_id == null) {
+                            Connections.repairClosed(sessionList);
+                            if (!sessionList.containsValue(username)) {
+                                sessionList.put(session, username);
                             }
-//                            onlineUsers("ONLINE_USERS");
-//                            broadcastMessage(  );
-//                        }
+
+                            onlineUsers("ONLINE_USERS");
+                            initBroadcast(session, "CHANNELS", token, username);
+                        } else {
+                            if (!channelMap.containsKey(channel_id)) {
+                                System.out.println("Channel not exsists must create instance of that Channel");
+                                WebsocketChannel channel = new WebsocketChannel(channel_id, channel_name);
+                                channelMap.put(channel_id, channel);
+                            }
+                            Connections.repairClosed(channelMap.get(channel_id).users);
+                            // Check if User is declared in Channel
+                            if (!channelMap.get(channel_id).users.containsValue(username)) {
+                                System.out.println("User is not declared in channel id:" + channel_id + " username: " + username);
+                                channelMap.get(channel_id).users.put(session, username);
+                            }
 //                            else {
-//                                if (!channelList.values().contains(session.queryParam("channel"))) {
-//                                    channelList.put( ???????????,session.queryParam("channel"));
-//                                    channelUsernameMap.put(session, session.queryParam("name"));
-//                                }
+//                                // User is in connected in channel
+//                                System.out.println("User is in channel");
+//                                System.out.println("userMap of this channel" + channelMap.get(channel_id).users);
+//                            }
+                            System.out.println("----------------------------------");
+
+                            broadcastMessage(
+                                    channelMap.get(channel_id).users,
+                                    channel_id,
+                                    "Server",
+                                    session.queryParam("username") + " joined the chat",
+                                    "MESSAGE",
+                                    channelMap.get(channel_id).history.toString()
+                            );
                         }
-//                        broadcastMessage("Server", (session.queryParam("name")     + " joined the chat"), "MESSAGE");
                     });
                     ws.onClose((session, status, message) -> {
                         String nickname = sessionList.get(session);
                         sessionList.remove(session);
-//                        onlineUsers("ONLINE_USERS");
-//                        broadcastMessage("Server", (username + " left the chat"));
+                        onlineUsers("ONLINE_USERS");
                     });
                     ws.onMessage((session, message) -> {
-//                        broadcastMessage(channelUsernameMap.get(session.queryParam("channel")), message);
+
+                        JSONObject obj = new JSONObject(message);
+                        String channel_id = obj.getString("channelId");
+                        String username = obj.getString("username");
+                        String text = obj.getString("message");
+
+
+                        broadcastMessage(
+                                channelMap.get(channel_id).users,
+                                channel_id,
+                                username,
+                                text,
+                                "MESSAGE",
+                                channelMap.get(channel_id).history.toString()
+                        );
+
+//                        channelMap.get(channel_id).history.add()
                     });
                 })
                 .post("/account/login/", ctx -> {
@@ -112,7 +130,7 @@ public class Server {
                         User userData = GetUser(ctx.formParam("login"), ctx.formParam("password"));
 
                         RefreshToken(token);
-                        System.out.println(GetUserSubscribedChannels(token, ctx.formParam("id")));
+//                        System.out.println(GetUserSubscribedChannels(token, ctx.formParam("id")));
                         JSONObject obj = new JSONObject();
                         obj.put("token", token);
                         obj.put("id", id);
@@ -274,6 +292,7 @@ public class Server {
     }
 
     private static void onlineUsers(String type) {
+        Connections.repairClosed(sessionList);
         sessionList.keySet().stream().filter(Session::isOpen).forEach(session -> {
             try {
                 session.send(
@@ -292,7 +311,6 @@ public class Server {
         if (!Base.hasConnection()) {
             DbConnection.BaseConnection();
         }
-//        System.out.println(GetUserSubscribedChannels(token, login));
         if (session.isOpen()) {
             try {
                 session.send(
@@ -307,16 +325,19 @@ public class Server {
     }
 
     // Sends a message from one user to all users, along with a list of current usernames
-    private static void broadcastMessage(Map<WsSession, String> channel, String sender, String message, String type) {
+    private static void broadcastMessage(Map<WsSession, String> channel, String channel_id, String sender, String message, String type, String history) {
+        Connections.repairClosed(channelMap.get(channel_id).users);
         channel.keySet().stream().filter(Session::isOpen).forEach(session -> {
             try {
                 session.send(
                         new JSONObject()
+                                .put("channelId", channel_id)
                                 .put("type", type)
                                 .put("author", sender)
                                 .put("text", message)
                                 .put("date", new SimpleDateFormat("HH:mm:ss").format(new Date()))
-                                .put("onlineUsers", channel.values()).toString()
+                                .put("history", history)
+                                .put("onlineChannelUsers", channel.values()).toString()
 
                 );
             } catch (Exception e) {
