@@ -19,7 +19,7 @@ public class AccountControllers {
         String userQuery = "login = '" + login + "'";
         String userJson = User.find(userQuery).toString();
         if (!Objects.equals(userJson, "[\n\n]")) {
-            List<User> list = User.find("login = '" + login + "'");
+            List<User> list = User.find("nickname = '" + login + "' or login = '" + login +"'");
             return list.get(0).get("id").toString();
         }
         return userJson;
