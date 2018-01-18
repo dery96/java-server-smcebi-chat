@@ -1,9 +1,11 @@
 
 // Server packages
 
+import Controllers.AccountControllers;
 import Helpers.Connections;
 import Helpers.DbConnection;
 import Helpers.WebsocketChannel;
+import Models.Message;
 import Models.User;
 import io.javalin.Javalin;
 import io.javalin.embeddedserver.jetty.websocket.WsSession;
@@ -45,6 +47,9 @@ public class Server {
                 .enableCorsForOrigin("*")
                 .ws("/chat/*", ws -> {
                     ws.onConnect(session -> {
+                        if (!Base.hasConnection()) {
+                            DbConnection.BaseConnection();
+                        }
                         String channel_id = session.queryParam("id");
                         String channel_name = session.queryParam("channel_name");
 
@@ -61,6 +66,21 @@ public class Server {
                             initBroadcast(session, "CHANNELS", token, username);
                             onlineUsers("ONLINE_USERS");
                         } else {
+                            for (Message m : Message.getRecent(channel_id, 10)) {
+                                session.send(
+                                        new JSONObject()
+                                                .put("channelId", channel_id)
+                                                .put("type", "MESSAGE")
+                                                .put("author", m.parent(User.class).get("nickname"))
+                                                .put("text", m.get("contents"))
+                                                .put("date", m.get("date"))
+                                                .put("history", "")
+                                                .put("onlineUsers", activeUsersList.values())
+                                                .put("onlineChannelUsers", "")
+                                                .toString()
+
+                                );
+                            }
                             if (!channelMap.containsKey(channel_id)) {
 //                                System.out.println("Channel not exsists must create instance of that Channel");
                                 WebsocketChannel channel = new WebsocketChannel(channel_id, channel_name);
@@ -95,11 +115,20 @@ public class Server {
                         onlineUsers("ONLINE_USERS");
                     });
                     ws.onMessage((session, message) -> {
-
+                        if (!Base.hasConnection()) {
+                            DbConnection.BaseConnection();
+                        }
                         JSONObject obj = new JSONObject(message);
                         String channel_id = obj.getString("channelId");
                         String username = obj.getString("username");
+                        System.out.println(username);
                         String text = obj.getString("message");
+                        String user_id = AccountControllers.GetId(username);
+
+
+                        Message msg = new Message();
+                        msg.set("user_id", user_id, "channel_id", channel_id, "contents", text);
+                        msg.saveIt();
 
 
                         broadcastMessage(
@@ -267,7 +296,7 @@ public class Server {
                         } else {
                             ctx.status(403); // FORBIDDEN
                         }
-                     } else {
+                    } else {
                         ctx.status(401); // UNAUTHORIZED
                     }
                 })

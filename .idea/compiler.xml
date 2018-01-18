@@ -7,10 +7,12 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="a" />
+        <module name="java-server-smcebi-chat" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="a" target="1.9" />
+      <module name="java-server-smcebi-chat" target="1.9" />
     </bytecodeTargetLevel>
   </component>
 </project>
