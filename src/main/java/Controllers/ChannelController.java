@@ -20,7 +20,7 @@ public class ChannelController {
             channel.set("owner_id", owner_id);
             channel.set("size", size);
             channel.saveIt();
-            return 201; // SUCCEED
+            return 201; // CREATED
         }
         return 403; // FORBIDDEN
     }
@@ -34,7 +34,7 @@ public class ChannelController {
             subscribe.set("channel_id", channel_id);
             subscribe.set("user_id", user_id);
             subscribe.saveIt();
-            return 201; // SUCCEED
+            return 201; // CREATED
         }
         return 403; // FORBIDDEN
     }

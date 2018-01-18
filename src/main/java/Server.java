@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.javalite.activejdbc.Base;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 
@@ -58,18 +57,19 @@ public class Server {
                                 sessionList.put(session, username);
                             }
 
-                            onlineUsers("ONLINE_USERS");
+
                             initBroadcast(session, "CHANNELS", token, username);
+                            onlineUsers("ONLINE_USERS");
                         } else {
                             if (!channelMap.containsKey(channel_id)) {
-                                System.out.println("Channel not exsists must create instance of that Channel");
+//                                System.out.println("Channel not exsists must create instance of that Channel");
                                 WebsocketChannel channel = new WebsocketChannel(channel_id, channel_name);
                                 channelMap.put(channel_id, channel);
                             }
                             Connections.repairClosed(channelMap.get(channel_id).users);
                             // Check if User is declared in Channel
                             if (!channelMap.get(channel_id).users.containsValue(username)) {
-                                System.out.println("User is not declared in channel id:" + channel_id + " username: " + username);
+//                                System.out.println("User is not declared in channel id:" + channel_id + " username: " + username);
                                 channelMap.get(channel_id).users.put(session, username);
                             }
 //                            else {
@@ -77,7 +77,7 @@ public class Server {
 //                                System.out.println("User is in channel");
 //                                System.out.println("userMap of this channel" + channelMap.get(channel_id).users);
 //                            }
-                            System.out.println("----------------------------------");
+//                            System.out.println("----------------------------------");
 
                             broadcastMessage(
                                     channelMap.get(channel_id).users,
@@ -155,7 +155,7 @@ public class Server {
                         activeUsersList.remove(ctx.formParam("token"));
                         onlineUsers("ONLINE_USERS");
 
-                        ctx.status(201); // SUCCESS
+                        ctx.status(201); // CREATED
                     } else {
                         ctx.status(401);
                     }
@@ -267,7 +267,7 @@ public class Server {
                         } else {
                             ctx.status(403); // FORBIDDEN
                         }
-                    } else {
+                     } else {
                         ctx.status(401); // UNAUTHORIZED
                     }
                 })
@@ -316,7 +316,8 @@ public class Server {
                 session.send(
                         new JSONObject()
                                 .put("type", type)
-                                .put("channels", GetChannels(token)).toString()
+                                .put("channels", GetChannels(token))
+                                .put("onlineUsers", activeUsersList.values()).toString()
                 );
             } catch (Exception e) {
                 e.printStackTrace();
@@ -337,6 +338,7 @@ public class Server {
                                 .put("text", message)
                                 .put("date", new SimpleDateFormat("HH:mm:ss").format(new Date()))
                                 .put("history", history)
+                                .put("onlineUsers", activeUsersList.values())
                                 .put("onlineChannelUsers", channel.values()).toString()
 
                 );
